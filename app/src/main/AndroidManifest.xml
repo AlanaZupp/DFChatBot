@@ -15,10 +15,6 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
         <activity
-            android:name=".calendar2_button"
-            android:label="@string/title_activity_calendar2_button"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
-        <activity
             android:name=".autcontact_button"
             android:label="@string/AUTCONTACT"
             android:parentActivityName=".help_button"
@@ -221,6 +217,7 @@
             android:name=".ChatbotActivity"
             android:label="@string/CHATBOTTITLE"
             android:parentActivityName=".MainActivity"
+            android:windowSoftInputMode="adjustResize|stateAlwaysHidden"
             tools:ignore="DuplicateActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
