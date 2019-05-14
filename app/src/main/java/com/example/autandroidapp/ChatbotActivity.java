@@ -89,7 +89,7 @@ public class ChatbotActivity extends AppCompatActivity
             //reading the response from dialog
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             StringBuilder sb = new StringBuilder();
-            String line = null;
+            String line;
             while((line= reader.readLine())!=null)
             {
                 sb.append(line+"\n");
@@ -115,7 +115,7 @@ public class ChatbotActivity extends AppCompatActivity
         } finally {
             try {
                 reader.close();
-            } catch (IOException e) {
+            } catch (IOException | NullPointerException e) {
                 e.printStackTrace();
             }
         }
