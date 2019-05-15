@@ -10,7 +10,13 @@
     android:fillViewport="true"
     >
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chatRV"
+        android:layout_width="match_parent"
+        android:layout_height="668dp"
+        android:layout_marginBottom="59dp">
 
+    </androidx.recyclerview.widget.RecyclerView>
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -58,15 +64,16 @@
             android:elevation="4dp">
 
             <ImageButton
+                android:id="@+id/imageButton"
                 android:layout_width="25dp"
                 android:layout_height="25dp"
                 android:layout_centerInParent="true"
                 android:background="#00FFFFFF"
                 android:onClick="sendMessage"
-                app:srcCompat="@android:drawable/ic_menu_send" />
+                app:srcCompat="@drawable/ic_menu_send" />
         </RelativeLayout>
     </RelativeLayout>
-
+<!--
     <TextView
         android:id="@+id/textMsgField"
         android:layout_width="368dp"
@@ -104,5 +111,5 @@
         android:gravity="center"
         android:hint="Your Message Should Appear Here"
         android:textColor="#FFFFFF"
-        android:textSize="14sp" />
+        android:textSize="14sp" />-->
 </RelativeLayout>

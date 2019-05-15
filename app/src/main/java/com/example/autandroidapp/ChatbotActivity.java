@@ -1,13 +1,18 @@
 package com.example.autandroidapp;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,6 +24,8 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -27,6 +34,9 @@ public class ChatbotActivity extends AppCompatActivity
 {
     TextView chatbotReply, userMessage;
     EditText editbox;
+    private RecyclerView msgRecyclerView;
+    List<ChatMsgList> msgList;
+    ChatAdapter adapter;
 
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
@@ -48,9 +58,21 @@ public class ChatbotActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chatbot);
         Intent intent = getIntent();
-        chatbotReply=findViewById(R.id.textMsgField);
-        userMessage=findViewById(R.id.userTextView);
-        editbox=findViewById(R.id.editText);
+        //chatbotReply=findViewById(R.id.left_msg_textview); //FIX
+       // userMessage=findViewById(R.id.right_msg_textview);
+        editbox=findViewById(R.id.editText); //edit box
+
+        msgRecyclerView = (RecyclerView)findViewById(R.id.chatRV);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        msgRecyclerView.setLayoutManager(linearLayoutManager);
+
+        msgList = new ArrayList<ChatMsgList>(); //inital list
+        ChatMsgList chatMsg = new ChatMsgList(ChatMsgList.Msg_rece,"Welcome!");
+        msgList.add(chatMsg); //to add it to the thing
+
+        adapter = new ChatAdapter(msgList);
+
+        msgRecyclerView.setAdapter(adapter);
     }
 
     /**
@@ -140,7 +162,8 @@ public class ChatbotActivity extends AppCompatActivity
         protected void onPostExecute(String s)
         {
             super.onPostExecute(s);
-            chatbotReply.setText(s); //sets dialogflow reply
+            recieveMessage(s);
+ //           chatbotReply.setText(s); //sets dialogflow reply
         }
     }
 
@@ -148,9 +171,30 @@ public class ChatbotActivity extends AppCompatActivity
      *
      */
     public void sendMessage(View view) {
-        userMessage.setText(editbox.getText().toString());
-        editbox.setText(""); //clear editbox on send
-        RetrieveFeedTask task = new RetrieveFeedTask();
-        task.execute(userMessage.getText().toString());
+          String userMsg = editbox.getText().toString();
+          if(!TextUtils.isEmpty(userMsg))
+          {
+              ChatMsgList chatMsg = new ChatMsgList(ChatMsgList.Msg_sent, userMsg);
+              msgList.add(chatMsg);
+              int msgPost = msgList.size()-1;
+
+              adapter.notifyItemInserted(msgPost);
+              msgRecyclerView.scrollToPosition(msgPost);
+              editbox.setText("");
+              RetrieveFeedTask task = new RetrieveFeedTask();
+              task.execute(userMsg);
+          }
+    }
+
+    public void recieveMessage(String response)
+    {
+        if(!TextUtils.isEmpty(response)) {
+            ChatMsgList chatMsg = new ChatMsgList(ChatMsgList.Msg_rece, response);
+            msgList.add(chatMsg);
+            int msgPost = msgList.size() - 1;
+
+            adapter.notifyItemInserted(msgPost);
+            msgRecyclerView.scrollToPosition(msgPost);
+        }
     }
 }
