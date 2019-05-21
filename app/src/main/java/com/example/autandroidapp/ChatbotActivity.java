@@ -5,6 +5,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -12,7 +13,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
 import android.view.View;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,7 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ * This is the main class for the chatbot and handles the connections between other classes
+ * as well as changes made to the users view.
  */
 public class ChatbotActivity extends AppCompatActivity
 {
@@ -37,6 +38,7 @@ public class ChatbotActivity extends AppCompatActivity
     private RecyclerView msgRecyclerView;
     List<ChatMsgList> msgList;
     ChatAdapter adapter;
+    MediaPlayer messageRec, messageSend;
 
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
@@ -48,35 +50,46 @@ public class ChatbotActivity extends AppCompatActivity
             case R.id.action_home:
                 Intent homePageIntent = new Intent(this, MainActivity.class);
                 this.startActivity(homePageIntent);
+                messageRec.release(); //release the media players to save space
+                messageSend.release();
                 return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     *The method that is called when the use access the chatbot section of the app.
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chatbot);
         Intent intent = getIntent();
-        //chatbotReply=findViewById(R.id.left_msg_textview); //FIX
-       // userMessage=findViewById(R.id.right_msg_textview);
-        editbox=findViewById(R.id.editText); //edit box
 
-        msgRecyclerView = (RecyclerView)findViewById(R.id.chatRV);
+        if(messageRec == null){ //If the media player for a message recieved is already created don't create another.
+        messageRec = MediaPlayer.create(this,R.raw.get_outta_here);
+        }
+        if(messageSend==null){ //IF the media player for a message sent is already created don't create another
+            messageSend = MediaPlayer.create(this, R.raw.inquisitiveness);
+        }
+
+        editbox=findViewById(R.id.editText); //initializes the users message box
+
+        msgRecyclerView = (RecyclerView)findViewById(R.id.chatRV); //Sets the recycler view which allows the messages to be recycled
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         msgRecyclerView.setLayoutManager(linearLayoutManager);
 
-        msgList = new ArrayList<ChatMsgList>(); //inital list
+        msgList = new ArrayList<ChatMsgList>(); //Creates the inital message list, assigning the first message as Welcome!, on the chat bots side.
         ChatMsgList chatMsg = new ChatMsgList(ChatMsgList.Msg_rece,"Welcome!");
-        msgList.add(chatMsg); //to add it to the thing
+        msgList.add(chatMsg);
 
-        adapter = new ChatAdapter(msgList);
-
-        msgRecyclerView.setAdapter(adapter);
+        adapter = new ChatAdapter(msgList); //sets the adapter to hold the message list
+        msgRecyclerView.setAdapter(adapter); //connects the adapter to the recycler
     }
 
     /**
-     *
+     * This is the method to get the response from dialogflow after the users query has been passed.
      * @param query - the user sent message
      * @return the response from dialog api
      * @throws UnsupportedEncodingException
@@ -92,7 +105,7 @@ public class ChatbotActivity extends AppCompatActivity
             URLConnection connection = url.openConnection();
             connection.setDoInput(true);
             connection.setDoOutput(true);
-            connection.setRequestProperty("Authorization","Bearer 5937957ad218472c86b898fdb1662e73"); //client access token
+            connection.setRequestProperty("Authorization","Bearer acd43e00b5dc415685c033294a283b7a");
             connection.setRequestProperty("Content-Type","application/json");
 
             //Creating a JSON object that holds user message
@@ -101,7 +114,7 @@ public class ChatbotActivity extends AppCompatActivity
             queryArray.put(query); //push into array
             jsonParameter.put("query",queryArray);
             jsonParameter.put("lang","en");
-            jsonParameter.put("sessionId","1234567890"); //session id is the same for everyone
+            jsonParameter.put("sessionId","1234567890"); //session id is the same for everyone doesnt need to be hidden
 
             //writing the json object to dialog
             OutputStreamWriter wr = new OutputStreamWriter(connection.getOutputStream());
@@ -116,7 +129,7 @@ public class ChatbotActivity extends AppCompatActivity
             {
                 sb.append(line+"\n");
             }
-            text = sb.toString(); //all data returned by the dialogflow
+            text = sb.toString(); //all data returned by dialogflow
 
             //un-indenting JSON file structure for dialogflow response
             JSONObject object = new JSONObject(text);
@@ -144,7 +157,10 @@ public class ChatbotActivity extends AppCompatActivity
         return null;
     }
 
-
+    /**
+     * This method is used to call getRes to get dialog flows response
+     * and then calls receiveMessage that will add the chatbots response to the list of messages.
+     */
     class RetrieveFeedTask extends AsyncTask<String, Void, String>
     {
         @Override
@@ -157,43 +173,56 @@ public class ChatbotActivity extends AppCompatActivity
             }
             return query;
         }
-
         @Override
         protected void onPostExecute(String s)
         {
             super.onPostExecute(s);
-            recieveMessage(s);
- //           chatbotReply.setText(s); //sets dialogflow reply
+            try {
+                recieveMessage(s); //sends dialog flow response to the chat recycler
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     /**
-     *
+     *  This method takes the text supplied by the user and generates a message in the chat
+     *  it also plays a sound unique to the user sending a message as well as clears the users
+     *  message box
+     * @param view
+     * @throws InterruptedException
      */
-    public void sendMessage(View view) {
+    public void sendMessage(View view) throws InterruptedException {
           String userMsg = editbox.getText().toString();
           if(!TextUtils.isEmpty(userMsg))
           {
-              ChatMsgList chatMsg = new ChatMsgList(ChatMsgList.Msg_sent, userMsg);
-              msgList.add(chatMsg);
-              int msgPost = msgList.size()-1;
-
-              adapter.notifyItemInserted(msgPost);
-              msgRecyclerView.scrollToPosition(msgPost);
-              editbox.setText("");
-              RetrieveFeedTask task = new RetrieveFeedTask();
-              task.execute(userMsg);
+                ChatMsgList chatMsg = new ChatMsgList(ChatMsgList.Msg_sent, userMsg); //create new chat message add it to the list
+                msgList.add(chatMsg);
+                int msgPost = msgList.size()-1;
+                editbox.setText(""); //clear user edit box
+                messageSend.start(); //play the message sound
+                adapter.notifyItemInserted(msgPost); //update chat recycler
+                msgRecyclerView.scrollToPosition(msgPost);
+                Thread.sleep(500); //sleep for .5sec to allow for sound
+                RetrieveFeedTask task = new RetrieveFeedTask(); //call for dialog flows response
+                task.execute(userMsg);
           }
     }
 
-    public void recieveMessage(String response)
-    {
-        if(!TextUtils.isEmpty(response)) {
-            ChatMsgList chatMsg = new ChatMsgList(ChatMsgList.Msg_rece, response);
+    /**
+     * This method takes the response given by dialog flow and generates a message in the chat,
+     * it also plays a sound unique to the chat bot responding to the user.
+     * @param response
+     * @throws InterruptedException
+     */
+    public void recieveMessage(String response) throws InterruptedException {
+        if(!TextUtils.isEmpty(response)) { //if the chatbots repsonse is not empty
+            ChatMsgList chatMsg = new ChatMsgList(ChatMsgList.Msg_rece, response); //create a new message and add that to the chat
             msgList.add(chatMsg);
             int msgPost = msgList.size() - 1;
-
-            adapter.notifyItemInserted(msgPost);
+            messageRec.start(); //play the sound uniwue to the chat bot responding
+            Thread.sleep(500);// sleep to allow time for the sound to play
+            adapter.notifyItemInserted(msgPost); //insert the new message into the recycler
             msgRecyclerView.scrollToPosition(msgPost);
         }
     }
