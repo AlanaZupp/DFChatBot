@@ -192,7 +192,7 @@ public class ChatbotActivity extends AppCompatActivity
      * @param view
      * @throws InterruptedException
      */
-    public void sendMessage(View view) throws InterruptedException {
+    public void sendMessage(View view) {
           String userMsg = editbox.getText().toString();
           if(!TextUtils.isEmpty(userMsg))
           {
@@ -203,7 +203,7 @@ public class ChatbotActivity extends AppCompatActivity
                 messageSend.start(); //play the message sound
                 adapter.notifyItemInserted(msgPost); //update chat recycler
                 msgRecyclerView.scrollToPosition(msgPost);
-                Thread.sleep(500); //sleep for .5sec to allow for sound
+                //Thread.sleep(500); //sleep for .5sec to allow for sound
                 RetrieveFeedTask task = new RetrieveFeedTask(); //call for dialog flows response
                 task.execute(userMsg);
           }
@@ -216,11 +216,11 @@ public class ChatbotActivity extends AppCompatActivity
      * @throws InterruptedException
      */
     public void recieveMessage(String response) throws InterruptedException {
-        if(!TextUtils.isEmpty(response)) { //if the chatbots repsonse is not empty
+        if(!TextUtils.isEmpty(response)) { //if the chatbots response is not empty
             ChatMsgList chatMsg = new ChatMsgList(ChatMsgList.Msg_rece, response); //create a new message and add that to the chat
             msgList.add(chatMsg);
             int msgPost = msgList.size() - 1;
-            messageRec.start(); //play the sound uniwue to the chat bot responding
+            messageRec.start(); //play the sound unique to the chat bot responding
             Thread.sleep(500);// sleep to allow time for the sound to play
             adapter.notifyItemInserted(msgPost); //insert the new message into the recycler
             msgRecyclerView.scrollToPosition(msgPost);
